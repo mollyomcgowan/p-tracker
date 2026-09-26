@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Poo Tracker</title>
+
+<!-- PWA: Android/Chrome -->
+<meta name="theme-color" content="#EF9F27">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" id="pwa-manifest">
+
+<!-- PWA: iOS/Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Poo Tracker">
+<link rel="apple-touch-icon" id="pwa-icon">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#ede9e3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#1a1816}
+#app{max-width:440px;margin:0 auto;height:100vh;display:flex;flex-direction:column;background:#fff;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,0.12)}
+
+.hdr{flex-shrink:0;padding:14px 16px 10px;border-bottom:0.5px solid rgba(0,0,0,0.1);background:#fff;display:flex;align-items:center;gap:8px}
+.hdr-icon{font-size:20px}
+.hdr-title{font-size:16px;font-weight:500}
+.hdr-sub{font-size:10px;color:#6b6560;letter-spacing:0.06em}
+
+.content{flex:1;overflow-y:auto;background:#f5f3f0}
+.pad{padding:0 16px 16px}
+
+.tabs{flex-shrink:0;display:flex;border-top:0.5px solid rgba(0,0,0,0.1);background:#fff}
+.tab{flex:1;padding:10px 0 13px;background:none;border:none;border-top:2px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:#6b6560;font-family:inherit}
+.tab.on{color:#BA7517;border-top-color:#EF9F27}
+.tab-ic{font-size:20px}
+
+.date-nav{display:flex;align-items:center;gap:8px;padding:16px 0 14px;border-bottom:0.5px solid rgba(0,0,0,0.08);margin-bottom:14px}
+.nav-btn{width:32px;height:32px;border-radius:8px;background:none;border:0.5px solid rgba(0,0,0,0.15);cursor:pointer;font-size:18px;color:#6b6560;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.nav-btn:disabled{border-color:transparent;color:rgba(0,0,0,0.15);cursor:default}
+.date-center{flex:1;text-align:center}
+.date-lbl{font-size:14px;font-weight:500}
+.date-sub{font-size:11px;color:#6b6560;margin-top:1px}
+.back-today{background:none;border:none;color:#BA7517;font-size:11px;cursor:pointer;font-family:inherit;display:block;margin:2px auto 0}
+.date-pick{width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.15);background:#f5f3f0;color:#6b6560;font-size:12px;font-family:inherit;cursor:pointer;margin-bottom:14px}
+
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.stat{background:#fff;border-radius:8px;padding:10px 12px;text-align:center;border:0.5px solid rgba(0,0,0,0.08)}
+.stat-lbl{font-size:10px;color:#6b6560;margin-bottom:3px}
+.stat-val{font-weight:500;line-height:1.3}
+
+.session-list{display:flex;flex-direction:column;gap:8px}
+.empty{text-align:center;color:#6b6560;font-size:13px;padding:44px 16px;border:0.5px dashed rgba(0,0,0,0.2);border-radius:12px}
+.card{background:#fff;border-radius:12px;padding:12px 14px;border:0.5px solid rgba(0,0,0,0.1);display:flex;align-items:flex-start;gap:10px}
+.time-btn{background:none;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:3px 7px;cursor:pointer;font-size:12px;color:#6b6560;font-family:inherit;flex-shrink:0;margin-top:1px}
+.time-btn:hover{border-color:#EF9F27}
+.card-body{flex:1;display:flex;flex-direction:column;gap:5px}
+.card-actions{display:flex;gap:6px;flex-shrink:0}
+.sm-btn{background:none;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:4px 6px;cursor:pointer;font-size:13px;color:#6b6560}
+.bb{display:inline-block;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:500;white-space:nowrap}
+.bb.sm{font-size:11px;padding:2px 8px}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:1px}
+.chip{font-size:11px;padding:2px 8px;border-radius:20px;background:#f0ede8;border:0.5px solid rgba(0,0,0,0.15);color:#6b6560;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.notes{color:#6b6560;font-size:12px;line-height:1.5;margin-top:1px}
+.add-btn{width:100%;margin-top:16px;padding:13px;border-radius:12px;background:#EF9F27;border:none;color:#412402;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.add-btn:active{background:#d48e1f}
+
+.data-hdr{padding:14px 0 12px;border-bottom:0.5px solid rgba(0,0,0,0.08);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.muted{font-size:12px;color:#6b6560}
+.btn-row{display:flex;gap:6px}
+.ghost{background:none;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:11px;color:#6b6560;font-family:inherit}
+.day-block{margin-bottom:16px}
+.day-hdr{font-size:12px;font-weight:500;padding:7px 10px;margin-bottom:6px;background:#f5f3f0;border-radius:8px;border-left:3px solid #EF9F27;display:flex;justify-content:space-between;align-items:center}
+.day-meta{font-weight:400;color:#6b6560;font-size:11px}
+.day-rows{display:flex;flex-direction:column;gap:5px;padding-left:10px}
+.data-row{background:#fff;border-radius:8px;padding:8px 10px;border:0.5px solid rgba(0,0,0,0.1);display:grid;grid-template-columns:38px 1fr;gap:8px;align-items:start}
+.data-time{color:#6b6560;font-size:11px;padding-top:2px}
+
+.sec-lbl{padding:14px 0 10px;border-bottom:0.5px solid rgba(0,0,0,0.08);margin-bottom:12px;font-size:12px;color:#6b6560}
+.chart-card{background:#fff;border-radius:12px;padding:14px 8px 8px;border:0.5px solid rgba(0,0,0,0.1);margin-bottom:16px;overflow:hidden}
+.legend{display:flex;flex-direction:column;gap:5px}
+.leg-row{display:flex;align-items:center;gap:8px}
+.leg-num{width:22px;text-align:center;font-size:11px;font-weight:500;border-radius:4px;padding:1px 0;flex-shrink:0}
+.leg-short{font-size:11px;color:#6b6560;flex:1}
+.leg-note{font-size:11px}
+
+/* Full-screen modal — solid white, nothing behind it */
+.modal{position:absolute;inset:0;background:#fff;z-index:100;overflow-y:auto;display:flex;flex-direction:column}
+.modal-inner{padding:20px;max-width:440px;width:100%;margin:0 auto}
+.modal-top{display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:0.5px solid rgba(0,0,0,0.1);margin-bottom:20px}
+.modal-title{font-size:15px;font-weight:500}
+.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:#6b6560;padding:4px;line-height:1}
+.field{margin-bottom:18px}
+.field-lbl{font-size:11px;color:#6b6560;margin-bottom:8px}
+.time-inp{width:100%;padding:10px 12px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.2);background:#f5f3f0;font-size:14px;font-family:inherit;color:#1a1816}
+.notes-inp{width:100%;padding:10px 12px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.2);background:#f5f3f0;font-size:13px;font-family:inherit;color:#1a1816;line-height:1.5;resize:none}
+
+.b-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.b-btn{padding:10px 2px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;background:#f5f3f0;border:0.5px solid #ddd;color:#6b6560}
+.b-icon{font-size:18px;line-height:1}
+.b-num{font-size:10px;font-weight:500}
+.b-desc{padding:7px 10px;border-radius:8px;font-size:12px;text-align:center;margin-top:6px}
+
+.sz-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sz-btn{padding:14px 4px 10px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;font-family:inherit;background:#f5f3f0;border:0.5px solid #ddd;color:#6b6560}
+
+.tr-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tr-btn{padding:10px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;font-family:inherit;background:#f5f3f0;border:0.5px solid #ddd;color:#6b6560;text-align:left}
+.tr-em{font-size:16px;flex-shrink:0}
+
+.save-btn{width:100%;padding:13px;border-radius:12px;background:#EF9F27;border:none;color:#412402;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:2px}
+.save-btn:disabled{background:#e0ddd9;color:#6b6560;cursor:not-allowed}
+
+/* iOS install hint banner */
+#install-hint{position:absolute;bottom:76px;left:12px;right:12px;background:#1a1816;color:#fff;padding:12px 14px;border-radius:12px;font-size:12px;display:flex;align-items:center;gap:10px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.25)}
+#install-hint-close{background:none;border:none;color:#EF9F27;cursor:pointer;font-size:18px;padding:0;margin-left:auto;line-height:1;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr"><span class="hdr-icon">💩</span><div><div class="hdr-title">Poo Tracker</div><div class="hdr-sub">Personal health log · Eastern Time</div></div></div>
+  <div class="content" id="content"></div>
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<script>
+'use strict';
+
+// ── PWA setup ──────────────────────────────────────────────────────────────────
+(function setupPWA() {
+  // Icon SVG: amber rounded square with poop emoji
+  const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#EF9F27"/><text x="50" y="74" text-anchor="middle" font-size="62" font-family="system-ui,sans-serif">💩</text></svg>`;
+  const iconURI = 'data:image/svg+xml,' + encodeURIComponent(iconSVG);
+
+  // Set apple touch icon
+  document.getElementById('pwa-icon').href = iconURI;
+
+  // Inject web manifest
+  const manifest = {
+    name: 'Poo Tracker',
+    short_name: 'Poo Log',
+    description: 'Bristol stool scale personal health log',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
+    orientation: 'portrait-primary',
+    background_color: '#ffffff',
+    theme_color: '#EF9F27',
+    icons: [{ src: iconURI, sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
+  };
+  document.getElementById('pwa-manifest').href =
+    'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+
+  // Register service worker (only when served over HTTP/S, not file://)
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
+  // iOS "Add to Home Screen" hint
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !isStandalone && !localStorage.getItem('hint-dismissed')) {
+    window.addEventListener('load', () => {
+      const el = document.createElement('div');
+      el.id = 'install-hint';
+      el.innerHTML = `<span style="font-size:20px;flex-shrink:0">📲</span><span>Tap <strong>Share ↑</strong> then <strong>"Add to Home Screen"</strong> to install</span><button id="install-hint-close">✕</button>`;
+      document.getElementById('app').appendChild(el);
+      document.getElementById('install-hint-close').onclick = () => {
+        el.remove(); localStorage.setItem('hint-dismissed', '1');
+      };
+    });
+  }
+})();
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+const KEY = 'poo_tracker_v1';
+const B = {
+  icon:  ['','🪨','🌰','🌭','🍌','🫐','☁️','💧'],
+  label: ['','Type 1','Type 2','Type 3','Type 4','Type 5','Type 6','Type 7'],
+  short: ['','Hard lumps','Lumpy','Cracked','Smooth','Soft blobs','Mushy','Liquid'],
+  note:  ['','Constipated','Constipated','Near-normal','Ideal','Soft','Loose','Diarrhea'],
+  bg:    ['','#FCEBEB','#FAECE7','#FAEEDA','#EAF3DE','#FAEEDA','#FAECE7','#FCEBEB'],
+  fg:    ['','#791F1F','#712B13','#633806','#27500A','#633806','#712B13','#791F1F'],
+};
+const SIZES  = [{k:'small',l:'Small'},{k:'medium',l:'Medium'},{k:'large',l:'Large'},{k:'pencil',l:'Pencil'}];
+const TRAITS = [
+  {k:'clean',     l:'Clean',        e:'✅'},
+  {k:'messy',     l:'Messy',        e:'💦'},
+  {k:'in_pieces', l:'In pieces',    e:'🧩'},
+  {k:'urgency',   l:'Urgency',      e:'⚡'},
+  {k:'hard_pass', l:'Hard to pass', e:'😤'},
+];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const uid     = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const todayET = () => new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+const nowET   = () => { const t=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false}); return t==='24:00'?'00:00':t; };
+const fromK   = s => { const [y,m,d]=s.split('-'); return new Date(+y,m-1,+d); };
+const fmtFull = s => fromK(s).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+const fmtShort= s => fromK(s).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const gtype   = s => Math.min(7,Math.max(1,s.type||s.rating||4));
+const esc     = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const sizeSVG = k => ({
+  small: `<svg width="24" height="24"><circle cx="12" cy="12" r="4"  fill="currentColor"/></svg>`,
+  medium:`<svg width="24" height="24"><circle cx="12" cy="12" r="7"  fill="currentColor"/></svg>`,
+  large: `<svg width="24" height="24"><circle cx="12" cy="12" r="10" fill="currentColor"/></svg>`,
+  pencil:`<svg width="24" height="24"><ellipse cx="12" cy="12" rx="3" ry="10" fill="currentColor"/></svg>`,
+})[k]||'';
+const szChip  = k => ({
+  small: `<svg width="10" height="10"><circle cx="5" cy="5" r="2"   fill="currentColor"/></svg>`,
+  medium:`<svg width="10" height="10"><circle cx="5" cy="5" r="3.5" fill="currentColor"/></svg>`,
+  large: `<svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="currentColor"/></svg>`,
+  pencil:`<svg width="10" height="10"><ellipse cx="5" cy="5" rx="1.5" ry="4.5" fill="currentColor"/></svg>`,
+})[k]||'';
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let S = {
+  tab:  'log',
+  date: todayET(),
+  data: (()=>{ try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}} })(),
+  modal: null,
+  form:  {time:'',type:4,size:null,traits:[],notes:''},
+};
+const persist = () => localStorage.setItem(KEY, JSON.stringify(S.data));
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('content').innerHTML = buildContent();
+  document.getElementById('tabs').innerHTML    = buildTabs();
+  bind();
+}
+
+function buildTabs() {
+  return [{id:'log',ic:'📋',l:'Log'},{id:'data',ic:'🗂️',l:'Data'},{id:'charts',ic:'📈',l:'Charts'}]
+    .map(t=>`<button class="tab${S.tab===t.id?' on':''}" data-tab="${t.id}"><span class="tab-ic">${t.ic}</span>${t.l}</button>`).join('');
+}
+
+function buildContent() {
+  return (S.tab==='log' ? buildLog() : S.tab==='data' ? buildData() : buildCharts())
+    + (S.modal ? buildModal() : '');
+}
+
+// ── Log tab ────────────────────────────────────────────────────────────────────
+function buildLog() {
+  const ss   = (S.data[S.date]||[]).slice().sort((a,b)=>a.time<b.time?-1:1);
+  const isTdy= S.date===todayET();
+  const avgR = ss.length ? ss.reduce((a,x)=>a+gtype(x),0)/ss.length : null;
+  const ctId = avgR ? Math.min(7,Math.max(1,Math.round(avgR))) : null;
+
+  return `<div class="pad">
+    <div class="date-nav">
+      <button class="nav-btn" id="prev">‹</button>
+      <div class="date-center">
+        <div class="date-lbl">${isTdy?'Today':fmtFull(S.date)}</div>
+        ${isTdy?`<div class="date-sub">${fmtFull(S.date)}</div>`:`<button class="back-today" id="back-today">→ Back to today</button>`}
+      </div>
+      <button class="nav-btn" id="next" ${isTdy?'disabled':''}>›</button>
+    </div>
+    <input type="date" class="date-pick" id="dpick" value="${S.date}" max="${todayET()}">
+    ${ss.length?`<div class="stats">${[['Sessions',ss.length],['Avg type',avgR?avgR.toFixed(1):'—'],['Closest',ctId?B.short[ctId]:'—']].map(([l,v])=>`<div class="stat"><div class="stat-lbl">${l}</div><div class="stat-val" style="font-size:${String(v).length>6?'13px':'20px'}">${v}</div></div>`).join('')}</div>`:''}
+    ${ss.length?`<div class="session-list">${ss.map(buildCard).join('')}</div>`:`<div class="empty">No sessions logged for this day</div>`}
+    <button class="add-btn" id="add-btn">+ Log a session</button>
+  </div>`;
+}
+
+function buildCard(s) {
+  const t=gtype(s), szE=SIZES.find(z=>z.k===s.size), trE=(s.traits||[]).map(k=>TRAITS.find(o=>o.k===k)).filter(Boolean);
+  const chips=[...(szE?[`<span class="chip">${szChip(s.size)} ${esc(szE.l)}</span>`]:[]),...trE.map(tr=>`<span class="chip">${tr.e} ${esc(tr.l)}</span>`)];
+  return `<div class="card" style="border-left:3px solid ${B.fg[t]}66">
+    <button class="time-btn" data-edit="${esc(s.id)}">${esc(s.time)}</button>
+    <div class="card-body">
+      <span class="bb" style="background:${B.bg[t]};color:${B.fg[t]};border:0.5px solid ${B.fg[t]}55">${B.icon[t]} ${B.label[t]} · ${B.short[t]}</span>
+      ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+      ${s.notes?`<div class="notes">${esc(s.notes)}</div>`:''}
+    </div>
+    <div class="card-actions"><button class="sm-btn" data-edit="${esc(s.id)}">✏️</button><button class="sm-btn" data-del="${esc(s.id)}">🗑️</button></div>
+  </div>`;
+}
+
+// ── Data tab ───────────────────────────────────────────────────────────────────
+function buildData() {
+  const days=Object.keys(S.data).sort((a,b)=>b>a?1:-1);
+  const total=days.reduce((s,d)=>s+(S.data[d]||[]).length,0);
+  if(!total) return `<div class="pad"><div class="empty" style="margin-top:40px">No data yet — start logging!</div></div>`;
+  return `<div class="pad">
+    <div class="data-hdr">
+      <span class="muted">${total} ${total===1?'session':'sessions'} total</span>
+      <div class="btn-row">
+        <button class="ghost" id="export-csv-btn">Export CSV ↓</button>
+        <button class="ghost" id="export-btn">Export JSON ↓</button>
+        <label class="ghost" style="cursor:pointer">Import JSON <input type="file" id="import-file" accept=".json" style="display:none"></label>
+      </div>
+    </div>
+    ${days.map(d=>{
+      const ss=(S.data[d]||[]).slice().sort((a,b)=>a.time<b.time?-1:1); if(!ss.length) return '';
+      const avg=(ss.reduce((s,x)=>s+gtype(x),0)/ss.length).toFixed(1);
+      return `<div class="day-block">
+        <div class="day-hdr"><span>${fmtFull(d)}</span><span class="day-meta">${ss.length} ${ss.length===1?'session':'sessions'} · avg T${avg}</span></div>
+        <div class="day-rows">${ss.map(s=>{
+          const t=gtype(s),szE=SIZES.find(z=>z.k===s.size),trE=(s.traits||[]).map(k=>TRAITS.find(o=>o.k===k)).filter(Boolean);
+          const chips=[...(szE?[`<span class="chip">${esc(szE.l)}</span>`]:[]),...trE.map(tr=>`<span class="chip">${tr.e} ${esc(tr.l)}</span>`)];
+          return `<div class="data-row" style="border-left:2px solid ${B.fg[t]}55">
+            <div class="data-time">${esc(s.time)}</div>
+            <div><span class="bb sm" style="background:${B.bg[t]};color:${B.fg[t]};border:0.5px solid ${B.fg[t]}55">${B.icon[t]} ${B.label[t]} · ${B.short[t]}</span>
+            ${chips.length?`<div class="chips" style="margin-top:4px">${chips.join('')}</div>`:''}
+            ${s.notes?`<div class="notes">${esc(s.notes)}</div>`:''}</div>
+          </div>`;
+        }).join('')}</div></div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── Charts tab ─────────────────────────────────────────────────────────────────
+function buildCharts() {
+  const days=Object.keys(S.data).sort();
+  if(!days.length) return `<div class="pad"><div class="empty" style="margin-top:40px">No data yet — start logging!</div></div>`;
+  const labels=days.map(fmtShort);
+  const counts=days.map(d=>(S.data[d]||[]).length);
+  const avgs=days.map(d=>{const ss=S.data[d]||[];return ss.length?+(ss.reduce((s,x)=>s+gtype(x),0)/ss.length).toFixed(1):null;});
+  return `<div class="pad">
+    <div class="sec-lbl">Sessions per day</div>
+    <div class="chart-card">${svgLine({values:counts,labels,color:'#EF9F27',yMin:0,yMax:Math.max(...counts,2),intY:true})}</div>
+    <div class="sec-lbl">Average Bristol type per day</div>
+    <div class="chart-card">${svgLine({values:avgs,labels,color:'#1D9E75',yMin:1,yMax:7,yTicks:[1,2,3,4,5,6,7],refY:4})}</div>
+    <div class="legend">${[1,2,3,4,5,6,7].map(t=>`<div class="leg-row"><span class="leg-num" style="background:${B.bg[t]};color:${B.fg[t]}">${t}</span><span style="font-size:14px;flex-shrink:0">${B.icon[t]}</span><span class="leg-short">${B.short[t]}</span><span class="leg-note" style="color:${B.fg[t]}">${B.note[t]}</span></div>`).join('')}</div>
+  </div>`;
+}
+
+function svgLine({values,labels,color,yMin,yMax,yTicks,refY,intY}) {
+  const W=380,H=155,P={t:8,r:28,b:28,l:28},IW=W-P.l-P.r,IH=H-P.t-P.b,n=values.length;
+  if(!n) return '<p style="text-align:center;color:#6b6560;padding:16px;font-size:12px">No data</p>';
+  const xOf=i=>n===1?IW/2:(i/(n-1))*IW;
+  const yOf=v=>v==null?null:IH-((v-yMin)/(yMax-yMin))*IH;
+  let path='',first=true;
+  values.forEach((v,i)=>{const y=yOf(v);if(y===null){first=true;return;}path+=(first?'M':' L')+xOf(i).toFixed(1)+' '+y.toFixed(1);first=false;});
+  const tks=yTicks||(intY?Array.from({length:Math.min(yMax-yMin+1,6)},(_,i)=>Math.round(yMin+i*(yMax-yMin)/5)):[yMin,+(yMin+(yMax-yMin)/2).toFixed(1),yMax]);
+  const grid=tks.map(v=>{const y=+yOf(v).toFixed(1);return `<line x1="0" y1="${y}" x2="${IW}" y2="${y}" stroke="rgba(0,0,0,0.06)" stroke-width="1"/><text x="-4" y="${y+3.5}" fill="#6b6560" font-size="9" text-anchor="end">${v}</text>`;}).join('');
+  const step=Math.max(1,Math.ceil(n/7));
+  const xlbls=[];for(let i=0;i<n;i+=step)xlbls.push(`<text x="${xOf(i).toFixed(1)}" y="${IH+18}" fill="#6b6560" font-size="9" text-anchor="middle">${esc(labels[i])}</text>`);
+  const dots=values.map((v,i)=>{const y=yOf(v);return y!==null?`<circle cx="${xOf(i).toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}"/>`:''}).join('');
+  const ref=refY!=null?`<line x1="0" y1="${yOf(refY).toFixed(1)}" x2="${IW}" y2="${yOf(refY).toFixed(1)}" stroke="#27500A" stroke-width="1.5" stroke-dasharray="4,3"/><text x="${IW+3}" y="${+yOf(refY).toFixed(1)+3}" fill="#27500A" font-size="8">ideal</text>`:'';
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;overflow:visible;display:block"><g transform="translate(${P.l},${P.t})">${grid}${ref}${path?`<path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}${xlbls.join('')}</g></svg>`;
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────────
+function buildModal() {
+  const f=S.form;
+  const bBtns=[1,2,3,4,5,6,7].map(t=>{const s=f.type===t;return `<button class="b-btn" data-btype="${t}" style="border:${s?`1.5px solid ${B.fg[t]}`:'0.5px solid #ddd'};background:${s?B.bg[t]:'#f5f3f0'};color:${s?B.fg[t]:'#6b6560'}"><span class="b-icon">${B.icon[t]}</span><span class="b-num">T${t}</span></button>`;}).join('');
+  const szBtns=SIZES.map(({k,l})=>{const s=f.size===k;return `<button class="sz-btn" data-size="${k}" style="border:${s?'1.5px solid #1D9E75':'0.5px solid #ddd'};background:${s?'#E1F5EE':'#f5f3f0'};color:${s?'#085041':'#6b6560'}">${sizeSVG(k)}<span>${l}</span></button>`;}).join('');
+  const trBtns=TRAITS.map(({k,l,e})=>{const s=(f.traits||[]).includes(k);return `<button class="tr-btn" data-trait="${k}" style="border:${s?'1.5px solid #185FA5':'0.5px solid #ddd'};background:${s?'#E6F1FB':'#f5f3f0'};color:${s?'#0C447C':'#6b6560'}"><span class="tr-em">${e}</span><span>${l}</span></button>`;}).join('');
+  return `<div class="modal"><div class="modal-inner">
+    <div class="modal-top"><span class="modal-title">${S.modal.mode==='add'?'Log a session':'Edit session'}</span><button class="modal-close" id="modal-close">✕</button></div>
+    <div class="field"><div class="field-lbl">Time (Eastern)</div><input type="time" class="time-inp" id="f-time" value="${esc(f.time)}"></div>
+    <div class="field"><div class="field-lbl">Bristol stool type</div><div class="b-grid">${bBtns}</div>${f.type?`<div class="b-desc" style="background:${B.bg[f.type]};color:${B.fg[f.type]}"><strong>${B.label[f.type]}</strong> — ${B.short[f.type]} <span style="opacity:0.8">· ${B.note[f.type]}</span></div>`:''}</div>
+    <div class="field"><div class="field-lbl">Size</div><div class="sz-grid">${szBtns}</div></div>
+    <div class="field"><div class="field-lbl">Select all that apply</div><div class="tr-grid">${trBtns}</div></div>
+    <div class="field"><div class="field-lbl">Notes (optional)</div><textarea class="notes-inp" id="f-notes" rows="2" placeholder="Anything else notable...">${esc(f.notes||'')}</textarea></div>
+    <button class="save-btn" id="save-btn" ${!f.time?'disabled':''}>
+      ${S.modal.mode==='add'?'Save session':'Save changes'}
+    </button>
+  </div></div>`;
+}
+
+// ── Event binding ──────────────────────────────────────────────────────────────
+function bind() {
+  q('[data-tab]').forEach(b=>on(b,'click',()=>{S.tab=b.dataset.tab;render();}));
+  on('prev','click',()=>shift(-1)); on('next','click',()=>shift(1));
+  on('back-today','click',()=>{S.date=todayET();render();});
+  on('dpick','change',e=>{if(e.target.value){S.date=e.target.value;render();}});
+  on('add-btn','click',()=>{S.form={time:nowET(),type:4,size:null,traits:[],notes:''};S.modal={mode:'add'};render();});
+  q('[data-edit]').forEach(b=>on(b,'click',()=>{
+    const s=(S.data[S.date]||[]).find(x=>x.id===b.dataset.edit); if(!s) return;
+    S.form={time:s.time,type:gtype(s),size:s.size||null,traits:s.traits||[],notes:s.notes||''};
+    S.modal={mode:'edit',id:s.id}; render();
+  }));
+  q('[data-del]').forEach(b=>on(b,'click',()=>{
+    const list=(S.data[S.date]||[]).filter(x=>x.id!==b.dataset.del);
+    if(list.length) S.data[S.date]=list; else delete S.data[S.date];
+    persist(); render();
+  }));
+  on('export-csv-btn','click',exportCSV);
+  on('export-btn','click',exportJSON);
+  on('import-file','change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const fr=new FileReader(); fr.onload=ev=>{
+      try{const d=JSON.parse(ev.target.result);if(typeof d==='object'&&!Array.isArray(d)){S.data={...S.data,...d};persist();render();alert('Import successful!');}else alert('Invalid format.');}
+      catch{alert('Could not parse file.');}
+    }; fr.readAsText(f);
+  });
+  on('modal-close','click',()=>{S.modal=null;render();});
+  on('f-time','change',e=>{S.form.time=e.target.value;const b=id('save-btn');if(b)b.disabled=!S.form.time;});
+  q('[data-btype]').forEach(b=>on(b,'click',()=>{cap();S.form.type=+b.dataset.btype;rModal();}));
+  q('[data-size]').forEach(b=>on(b,'click',()=>{cap();S.form.size=S.form.size===b.dataset.size?null:b.dataset.size;rModal();}));
+  q('[data-trait]').forEach(b=>on(b,'click',()=>{
+    cap();const k=b.dataset.trait,tr=S.form.traits||[];
+    S.form.traits=tr.includes(k)?tr.filter(t=>t!==k):[...tr,k];rModal();
+  }));
+  on('save-btn','click',()=>{
+    cap(); if(!S.form.time) return;
+    const list=[...(S.data[S.date]||[])];
+    if(S.modal.mode==='add') list.push({id:uid(),...S.form});
+    else{const i=list.findIndex(s=>s.id===S.modal.id);if(i>=0)list[i]={...list[i],...S.form};}
+    S.data[S.date]=list; persist(); S.modal=null; render();
+  });
+  if(S.modal?.mode==='edit') setTimeout(()=>id('f-time')?.focus(),50);
+}
+
+function cap(){const t=id('f-time'),n=id('f-notes');if(t)S.form.time=t.value;if(n)S.form.notes=n.value;}
+function rModal(){const el=document.querySelector('.modal');if(el){const tmp=document.createElement('div');tmp.innerHTML=buildModal();el.replaceWith(tmp.firstElementChild);bind();}}
+function shift(n){const d=fromK(S.date);d.setDate(d.getDate()+n);const k=d.toLocaleDateString('en-CA',{timeZone:'America/New_York'});if(k<=todayET()){S.date=k;render();}}
+function exportJSON(){const blob=new Blob([JSON.stringify(S.data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`poo-tracker-${todayET()}.json`;a.click();URL.revokeObjectURL(url);}
+
+function exportCSV(){
+  // One boolean column per trait — easier to filter/pivot in Excel or Sheets
+  const header=['Date','Time','Bristol Type','Description','Clinical Note','Size',
+    ...TRAITS.map(t=>t.l),'Notes'];
+  const rows=[header];
+  Object.keys(S.data).sort().forEach(date=>{
+    (S.data[date]||[]).slice().sort((a,b)=>a.time<b.time?-1:1).forEach(s=>{
+      const t=gtype(s);
+      rows.push([
+        date, s.time, t, B.short[t], B.note[t],
+        s.size||'',
+        ...TRAITS.map(({k})=>(s.traits||[]).includes(k)?'Yes':'No'),
+        s.notes||'',
+      ]);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>{
+    const c=String(v);
+    return /[,"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;
+  }).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`poo-tracker-${todayET()}.csv`;a.click();URL.revokeObjectURL(url);
+}
+const id=s=>document.getElementById(s);
+const q =s=>[...document.querySelectorAll(s)];
+const on=(t,ev,fn)=>{const el=typeof t==='string'?id(t):t;if(el)el.addEventListener(ev,fn);};
+
+render();
+</script>
+</body>
+</html>
